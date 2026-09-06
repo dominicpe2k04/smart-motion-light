@@ -1,7 +1,6 @@
-````markdown
 # Raspberry Pi 5 Smart Motion Night Light
 
-A smart automated night light built using a **Raspberry Pi 5**, **Python**, and **GPIO Zero**. The system detects human motion using a PIR sensor, measures ambient light using an LDR with an RC timing circuit, and automatically controls an RGB LED.
+A smart automated night light built using a **Raspberry Pi 5**, **Python**, and **GPIO Zero**. The system detects human motion using an HC-SR501 PIR sensor, measures ambient light using an LDR with an RC timing circuit, and automatically controls a common-cathode RGB LED.
 
 The LED turns on only when **motion is detected AND the room is dark**, and automatically turns off after a configurable timeout.
 
@@ -48,20 +47,26 @@ The LED turns on only when **motion is detected AND the room is dark**, and auto
 | OUT | GPIO4 |
 | GND | GND |
 
-Physical pin connections:
+### Physical Pin Connections
 
 ```text
-HC-SR501 VCC  → Pin 2  (5V)
-HC-SR501 OUT  → Pin 7  (GPIO4)
-HC-SR501 GND  → Pin 9  (GND)
-````
+HC-SR501 VCC  → Raspberry Pi Pin 2  (5V)
+HC-SR501 OUT  → Raspberry Pi Pin 7  (GPIO4)
+HC-SR501 GND  → Raspberry Pi Pin 9  (GND)
+```
 
 ### PIR Configuration
 
-* Sensitivity: approximately 50%
-* Time Delay: approximately 5 seconds
-* Jumper: H / Repeatable Trigger
-* Warm-up time: 30–60 seconds after power-on
+Recommended HC-SR501 settings:
+
+```text
+Sensitivity  → Approximately 50%
+Time Delay   → Approximately 5 seconds
+Jumper       → H / Repeatable Trigger
+Warm-up      → 30–60 seconds after power-on
+```
+
+The PIR requires a warm-up period after power-on before motion readings become reliable.
 
 ---
 
@@ -79,16 +84,16 @@ The Raspberry Pi 5 does not provide a conventional analog input, so the LDR is m
                            └──── GND Pin 14
 ```
 
-Connections:
+### Connections
 
 | LDR / Capacitor | Raspberry Pi 5 |
-| --------------- | -------------- |
-| LDR Leg 1       | 3.3V           |
-| LDR Leg 2       | GPIO18         |
-| Capacitor Leg 1 | GPIO18         |
-| Capacitor Leg 2 | GND            |
+|-----------------|----------------|
+| LDR Leg 1 | 3.3V |
+| LDR Leg 2 | GPIO18 |
+| Capacitor Leg 1 | GPIO18 |
+| Capacitor Leg 2 | GND |
 
-The LDR reading is normalized between:
+The LDR library normalizes the measured light level between:
 
 ```text
 0.0 → Dark
@@ -101,16 +106,16 @@ The LDR reading is normalized between:
 
 The project uses a **common-cathode RGB LED**.
 
-Each LED channel must use a **220Ω series resistor**.
+Each LED color channel uses a **220Ω series resistor**.
 
-| RGB LED        | Resistor | Raspberry Pi GPIO | Physical Pin |
-| -------------- | -------- | ----------------: | -----------: |
-| Red            | 220Ω     |            GPIO17 |       Pin 11 |
-| Green          | 220Ω     |            GPIO27 |       Pin 13 |
-| Blue           | 220Ω     |            GPIO22 |       Pin 15 |
-| Common Cathode | —        |               GND |        Pin 6 |
+| RGB LED Pin | Resistor | Raspberry Pi GPIO | Physical Pin |
+|-------------|----------|------------------:|-------------:|
+| Red Anode | 220Ω | GPIO17 | Pin 11 |
+| Green Anode | 220Ω | GPIO27 | Pin 13 |
+| Blue Anode | 220Ω | GPIO22 | Pin 15 |
+| Common Cathode | — | GND | Pin 6 |
 
-Connection:
+### Connection
 
 ```text
 GPIO17 ── 220Ω ── RED
@@ -122,15 +127,20 @@ Common Cathode ───── GND
 
 ---
 
-# GPIO Summary
+# Complete GPIO Summary
 
-| Function                 |   GPIO | Physical Pin |
-| ------------------------ | -----: | -----------: |
-| PIR Motion               |  GPIO4 |        Pin 7 |
-| RGB Red                  | GPIO17 |       Pin 11 |
-| RGB Green                | GPIO27 |       Pin 13 |
-| RGB Blue                 | GPIO22 |       Pin 15 |
-| LDR + Capacitor Junction | GPIO18 |       Pin 12 |
+| Function | GPIO | Physical Pin |
+|----------|-----:|-------------:|
+| PIR Motion Sensor | GPIO4 | Pin 7 |
+| RGB Red | GPIO17 | Pin 11 |
+| RGB Green | GPIO27 | Pin 13 |
+| RGB Blue | GPIO22 | Pin 15 |
+| LDR + Capacitor Junction | GPIO18 | Pin 12 |
+| PIR VCC | 5V | Pin 2 |
+| LDR VCC | 3.3V | Pin 1 |
+| RGB Common Cathode | GND | Pin 6 |
+| PIR GND | GND | Pin 9 |
+| LDR Capacitor GND | GND | Pin 14 |
 
 ---
 
@@ -156,14 +166,14 @@ smart_motion/
 
 # Software Requirements
 
-* Raspberry Pi 5
-* Raspberry Pi OS
-* Python 3
-* GPIO Zero
-* lgpio
-* Python virtual environment
+- Raspberry Pi 5
+- Raspberry Pi OS
+- Python 3
+- GPIO Zero
+- lgpio
+- Python virtual environment
 
-No external sensor libraries are required.
+The project uses custom modular Python libraries for the PIR, LDR, and RGB LED.
 
 ---
 
@@ -176,17 +186,23 @@ sudo apt update
 sudo apt upgrade -y
 ```
 
-## Install GPIO Zero and GPIO Backend
+---
+
+# Install GPIO Zero and GPIO Backend
+
+Install the Raspberry Pi OS system packages:
 
 ```bash
 sudo apt install python3-gpiozero python3-lgpio python3-venv
 ```
 
-The project uses the Raspberry Pi OS system GPIO libraries rather than installing the GPIO backend through pip.
+The project uses the system-installed GPIO libraries rather than installing the GPIO backend through pip.
 
 ---
 
 # Create Virtual Environment
+
+Create the virtual environment with access to system packages:
 
 ```bash
 python3 -m venv --system-site-packages venv
@@ -212,17 +228,19 @@ GPIO OK
 
 ---
 
-# Custom Sensor Libraries
+# Custom Libraries
 
 ## PIR Library
 
-`pir.py` provides:
+The project uses a custom `pir.py` library.
 
-* PIR initialization
-* Motion detection
-* Wait for motion
-* Wait for no motion
-* GPIO cleanup
+It provides:
+
+- PIR initialization
+- Motion detection
+- Wait for motion
+- Wait for no motion
+- GPIO cleanup
 
 Example:
 
@@ -237,15 +255,17 @@ if pir.motion():
 
 ---
 
-## LDR Library
+# LDR Library
 
-`ldr.py` provides:
+The project uses a custom `ldr.py` library for RC-timing light measurement.
 
-* LDR initialization
-* RC charge-time measurement
-* Light value from 0.0 to 1.0
-* Light percentage
-* Calibration support
+It provides:
+
+- LDR initialization
+- RC charge-time measurement
+- Light value from 0.0 to 1.0
+- Light percentage
+- Calibration support
 
 Example:
 
@@ -261,13 +281,15 @@ print(light)
 
 ---
 
-## RGB Library
+# RGB Library
 
-`rgb.py` provides:
+The project uses a custom `rgb.py` library.
 
-* RGB LED initialization
-* RGB color control
-* LED OFF control
+It provides:
+
+- RGB LED initialization
+- RGB color control
+- LED OFF control
 
 Example:
 
@@ -283,15 +305,21 @@ rgb.color(255, 179, 77)
 
 # Project Stages
 
-## Step 1 — PIR Test
+The project is divided into five stages.
 
-Tests the HC-SR501 independently.
+---
+
+# Step 1 — PIR Test
+
+Step 1 tests the HC-SR501 PIR independently.
 
 Run:
 
 ```bash
 python step1.py
 ```
+
+The PIR is given time to warm up before testing.
 
 Expected behavior:
 
@@ -300,11 +328,13 @@ Motion detected!
 No motion.
 ```
 
+Move your hand in front of the PIR and verify that motion is detected.
+
 ---
 
-## Step 2 — LDR Test
+# Step 2 — LDR Test
 
-Tests the LDR and RC timing circuit.
+Step 2 tests the LDR and RC timing circuit.
 
 Run:
 
@@ -327,7 +357,9 @@ Then shine a light on the LDR and observe the reading increase.
 
 # LDR Calibration
 
-Measure the LDR under the actual room conditions.
+The LDR threshold should be calibrated according to the actual environment.
+
+Record the LDR value in normal room lighting and in darkness.
 
 Example:
 
@@ -336,27 +368,29 @@ Normal room light → 0.80
 Dark room         → 0.15
 ```
 
-The darkness threshold should be selected between the measured bright and dark values.
+A suitable darkness threshold can then be selected between the measured bright and dark values.
 
-Default starting value:
+The starting threshold is:
 
 ```python
 DARK_THRESHOLD = 0.4
 ```
 
-Adjust this value according to the actual LDR readings.
+This value should be adjusted according to the actual readings from the LDR.
 
 ---
 
 # Step 3 — Motion-Only Night Light
+
+Step 3 combines the PIR sensor and RGB LED.
+
+The LDR is ignored at this stage.
 
 Run:
 
 ```bash
 python step3.py
 ```
-
-At this stage the LDR is ignored.
 
 Behavior:
 
@@ -365,7 +399,7 @@ Motion detected → RGB LED ON
 No motion       → RGB LED OFF
 ```
 
-Warm white:
+The RGB LED uses a warm-white color:
 
 ```python
 WARM_WHITE = (255, 179, 77)
@@ -374,6 +408,8 @@ WARM_WHITE = (255, 179, 77)
 ---
 
 # Step 4 — True Night Light
+
+Step 4 combines the PIR, LDR, and RGB LED.
 
 Run:
 
@@ -391,7 +427,7 @@ Room is dark
    LED ON
 ```
 
-Logic:
+The logic is:
 
 ```python
 if motion_detected and light_value < DARK_THRESHOLD:
@@ -400,18 +436,20 @@ else:
     rgb.off()
 ```
 
-Expected behavior:
+### Expected Behavior
 
-| Motion | Room   | LED |
-| ------ | ------ | --- |
-| No     | Bright | OFF |
-| Yes    | Bright | OFF |
-| No     | Dark   | OFF |
-| Yes    | Dark   | ON  |
+| Motion | Room Condition | LED |
+|--------|-----------------|-----|
+| No | Bright | OFF |
+| Yes | Bright | OFF |
+| No | Dark | OFF |
+| Yes | Dark | ON |
 
 ---
 
 # Step 5 — Final Smart Motion Night Light
+
+Step 5 is the final version of the project.
 
 Run:
 
@@ -419,15 +457,18 @@ Run:
 python step5.py
 ```
 
-The final version adds:
+The final version includes:
 
-* Darkness detection
-* Motion detection
-* Warm-white RGB LED
-* Automatic timeout
-* Event logging
+- PIR motion detection
+- LDR light detection
+- Darkness threshold
+- RGB warm-white output
+- Automatic LED timeout
+- Event logging
 
-Default timeout:
+### Timeout
+
+The default timeout is:
 
 ```python
 ON_TIMEOUT = 15
@@ -445,7 +486,7 @@ The final program records events in:
 nightlight.log
 ```
 
-View the log:
+View the log using:
 
 ```bash
 cat nightlight.log
@@ -469,23 +510,31 @@ Activate the virtual environment:
 source venv/bin/activate
 ```
 
-Run the required stage:
+Run Step 1:
 
 ```bash
 python step1.py
 ```
 
+Run Step 2:
+
 ```bash
 python step2.py
 ```
+
+Run Step 3:
 
 ```bash
 python step3.py
 ```
 
+Run Step 4:
+
 ```bash
 python step4.py
 ```
+
+Run Step 5:
 
 ```bash
 python step5.py
@@ -517,7 +566,7 @@ python step5.py
                 └──────────────┘
                        │
                        ▼
-                 Room Dark?
+                  Room Dark?
                        │
                        ▼
              Motion AND Darkness
@@ -534,128 +583,6 @@ python step5.py
                        ▼
                     LED OFF
 ```
-
----
-
-# Verification Checklist
-
-Before considering the project complete:
-
-* [ ] PIR detects motion reliably
-* [ ] LDR changes value between bright and dark
-* [ ] RGB LED produces warm white
-* [ ] Step 3 works with motion regardless of light level
-* [ ] Step 4 requires both motion and darkness
-* [ ] Step 5 automatically turns the LED off after the timeout
-* [ ] `nightlight.log` records system events
-* [ ] Ctrl+C turns the LED off
-* [ ] GPIO resources are properly released
-
----
-
-# Troubleshooting
-
-## PIR triggers continuously
-
-Possible causes:
-
-* PIR still warming up
-* Sensitivity too high
-* PIR jumper configuration
-
-Check:
-
-```text
-Jumper → H
-Sensitivity → approximately 50%
-```
-
-Allow 30–60 seconds after powering the PIR.
-
----
-
-## PIR does not detect motion
-
-Check:
-
-```text
-VCC → 5V
-OUT → GPIO4
-GND → GND
-```
-
-Also make sure the sensor has completed its warm-up period.
-
----
-
-## LDR value does not change
-
-Check:
-
-* LDR wiring
-* GPIO18 connection
-* 1µF capacitor connection
-* 3.3V connection
-* GND connection
-
-The junction must be:
-
-```text
-LDR + Capacitor + GPIO18
-```
-
----
-
-## LED does not turn on
-
-Check:
-
-```text
-GPIO17 → Red
-GPIO27 → Green
-GPIO22 → Blue
-```
-
-Make sure each channel has a **220Ω resistor**.
-
-Also verify that the RGB LED is **common cathode**.
-
----
-
-## LED stays OFF in darkness
-
-Check the LDR value:
-
-```bash
-python step2.py
-```
-
-Then adjust:
-
-```python
-DARK_THRESHOLD = 0.4
-```
-
-according to your actual LDR calibration.
-
----
-
-## LED flickers around the threshold
-
-The LDR value may be fluctuating around the darkness threshold.
-
-For example:
-
-```text
-0.399
-0.401
-0.398
-0.402
-```
-
-This can cause the LED to repeatedly switch states.
-
-A future improvement is to add **hysteresis** using separate ON and OFF thresholds.
 
 ---
 
@@ -700,17 +627,191 @@ Timeout + Logging
 
 ---
 
+# Verification Checklist
+
+Before considering the project complete:
+
+- [ ] PIR detects motion reliably
+- [ ] LDR changes value between bright and dark
+- [ ] RGB LED produces warm white
+- [ ] Step 3 works with motion regardless of light level
+- [ ] Step 4 requires both motion and darkness
+- [ ] Step 5 automatically turns the LED off after the timeout
+- [ ] `nightlight.log` records system events
+- [ ] Ctrl+C turns the LED off
+- [ ] GPIO resources are properly released
+
+---
+
+# Troubleshooting
+
+## PIR Triggers Continuously
+
+Possible causes:
+
+- PIR is still warming up
+- Sensitivity is too high
+- Incorrect jumper configuration
+
+Check:
+
+```text
+Jumper     → H
+Sensitivity → Approximately 50%
+```
+
+Allow 30–60 seconds after powering the PIR.
+
+---
+
+## PIR Does Not Detect Motion
+
+Check:
+
+```text
+VCC → 5V
+OUT → GPIO4
+GND → GND
+```
+
+Also make sure the sensor has completed its warm-up period.
+
+---
+
+## LDR Value Does Not Change
+
+Check:
+
+- LDR wiring
+- GPIO18 connection
+- 1µF capacitor connection
+- 3.3V connection
+- GND connection
+
+The junction must connect:
+
+```text
+LDR + Capacitor + GPIO18
+```
+
+---
+
+## LED Does Not Turn On
+
+Check:
+
+```text
+GPIO17 → Red
+GPIO27 → Green
+GPIO22 → Blue
+```
+
+Make sure each channel has a **220Ω resistor**.
+
+Also verify that the RGB LED is **common cathode**.
+
+---
+
+## LED Stays OFF in Darkness
+
+Check the LDR value:
+
+```bash
+python step2.py
+```
+
+Then adjust:
+
+```python
+DARK_THRESHOLD = 0.4
+```
+
+according to the actual LDR calibration.
+
+---
+
+## LED Flickers Around the Threshold
+
+The LDR value may be fluctuating around the darkness threshold.
+
+For example:
+
+```text
+0.399
+0.401
+0.398
+0.402
+```
+
+This can cause the LED to repeatedly switch states.
+
+A possible future improvement is to add **hysteresis** using separate ON and OFF thresholds.
+
+---
+
+# Project Deliverables
+
+The completed project should include:
+
+## Photos
+
+- Full Raspberry Pi + breadboard setup
+- PIR sensor close-up showing trimpots and jumper
+- LDR + capacitor circuit close-up
+- LED OFF in a lit room with no motion
+- LED ON in a dark room with motion
+- Thonny screenshot showing the final Step 5 code
+
+## Video
+
+A 90–180 second demonstration showing:
+
+- Motion-only mode
+- Night-light behavior
+- Bright-room test
+- Dark-room + motion test
+- Automatic timeout
+- Terminal/log output
+
+## Written Notes
+
+Include:
+
+- Total build time
+- Actual `DARK_THRESHOLD`
+- LDR calibration values
+- Room conditions during calibration
+- Any deviations from the build specification
+- Problems encountered and solutions
+- Suggestions for simplifying the project for a 9-year-old
+- Hardest concept
+- Any improvements or experiments
+
+## Code
+
+Include:
+
+- `pir.py`
+- `ldr.py`
+- `rgb.py`
+- `step1.py`
+- `step2.py`
+- `step3.py`
+- `step4.py`
+- `step5.py`
+- Any experimental code
+- A sample `nightlight.log` containing at least 5 minutes of operation
+
+---
+
 # Author
 
 **Dominic**
 
-GitHub: [https://github.com/dominicpe2k04](https://github.com/dominicpe2k04)
+GitHub: https://github.com/dominicpe2k04
 
-Email: [dominicpe2k04@gmail.com](mailto:dominicpe2k04@gmail.com)
+Email: dominicpe2k04@gmail.com
 
 ---
 
 Built using **Raspberry Pi 5**, **Python**, **GPIO Zero**, **lgpio**, and custom modular sensor libraries.
-
-```
-```
